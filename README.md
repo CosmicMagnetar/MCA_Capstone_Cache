@@ -30,7 +30,7 @@ Install Icarus Verilog and run:
 bash sim/run_krishna_tests.sh
 ```
 
-The controller-level bench models decoder/storage behaviour and delayed main memory. Memory and performance-monitor unit benches are run separately. Once the decoder and storage are merged, the script also elaborates the real `cache_top`.
+The controller-level bench models decoder/storage behaviour and delayed main memory. Memory and performance-monitor unit benches are run separately. The script also elaborates the integrated `cache_top` from its current dependencies.
 
 ## Processor request protocol
 
@@ -54,5 +54,24 @@ iverilog -g2012 -Wall -s tb_cache_top -o /tmp/tb_cache_top.vvp \
 vvp /tmp/tb_cache_top.vvp
 ```
 
-Verified with Icarus Verilog: 13 checks passed, 0 failed. The integrated
-performance counters were 9 accesses, 5 hits, and 4 misses.
+The Issue #7 baseline covers the nine read/write transactions, counter checks,
+and write consistency checks. The combined Issue #7 and Issue #8 results are
+recorded in `sim/waveforms/verification_report.md`.
+
+## Cache edge-case verification and waveform evidence
+
+The same integrated testbench also covers reset invalidation, protocol-legal
+consecutive requests, a request presented while the controller is busy,
+four-word refill ordering, stale-data prevention on replacement, write-through
+visibility, and preservation of other words in written blocks. Run the full
+Issue #7 and Issue #8 suites and generate scenario VCDs with:
+
+```sh
+bash sim/run_cache_top_verification.sh
+```
+
+The runner compiles the same RTL dependencies listed above, runs the complete
+test sequence, then runs isolated scenarios for named waveforms under
+`sim/waveforms/`. The full sequence currently passes 39 checks with 26 accesses,
+13 hits, and 13 misses. Per-scenario outcomes and waveform names are recorded in
+`sim/waveforms/verification_report.md`.
