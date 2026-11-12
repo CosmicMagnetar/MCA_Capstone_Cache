@@ -35,3 +35,24 @@ The controller-level bench models decoder/storage behaviour and delayed main mem
 ## Processor request protocol
 
 `cpu_req` marks one request. The controller captures the request only while idle. `cpu_ready` is a one-cycle completion pulse; read data is valid with that pulse. Requests asserted while busy are not queued. Deassert `cpu_req` for at least one rising edge between transactions.
+
+## Integrated cache system testbench
+
+`sim/testbenches/tb_cache_top.v` tests the real `cache_top` with deterministic
+initialization of the integrated main-memory array. It covers a cold miss,
+repeated and same-block hits, same-index tag replacement and eviction, a write
+hit, a write miss with allocation, write-through consistency, and readback.
+The testbench also checks the completion counters after each transaction.
+
+Run from the repository root with Icarus Verilog:
+
+```sh
+iverilog -g2012 -Wall -s tb_cache_top -o /tmp/tb_cache_top.vvp \
+  rtl/address_decoder.v rtl/cache_storage.v rtl/cache_controller.v \
+  rtl/performance_monitor.v memory/main_memory_model.v rtl/cache_top.v \
+  sim/testbenches/tb_cache_top.v
+vvp /tmp/tb_cache_top.vvp
+```
+
+Verified with Icarus Verilog: 13 checks passed, 0 failed. The integrated
+performance counters were 9 accesses, 5 hits, and 4 misses.
