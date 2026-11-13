@@ -52,13 +52,12 @@ Block ordering: [31:0] = word 0 at the lowest address; [63:32], [95:64], [127:96
 
 ## Main memory — `memory/main_memory_model.v` (Saumya, #4)
 
-The merged implementation's existing interface is:
-
 ```verilog
 module main_memory_model #(
   parameter ADDR_WIDTH = 32,
   parameter MEM_WORDS  = 4096,
-  parameter LATENCY    = 5
+  parameter LATENCY    = 5,
+  parameter MEM_INIT_FILE = ""
 )(
   input wire clk, input wire reset,
   input wire req, input wire write_en,
@@ -69,7 +68,11 @@ module main_memory_model #(
 );
 ```
 
-`req` is a one-cycle pulse accepted while memory is idle. `write_en=0` reads the aligned four-word block containing `addr`; `write_en=1` writes one 32-bit word. `ready` is a one-cycle response after configured latency. The memory accepts one outstanding request. Contents initialize to zero at simulation start; reset resets protocol state, not the memory array.
+- `ADDR_WIDTH` configures the address input width; `MEM_WORDS` configures the number of 32-bit words; `LATENCY` sets the request response delay (default five cycles).
+- `MEM_INIT_FILE` is an optional simulation initialization file. The memory array is first zero-filled; when this parameter is non-empty, `$readmemh(MEM_INIT_FILE, mem)` loads hexadecimal word values from the file.
+- `req` is a one-cycle pulse accepted while memory is idle. `write_en=0` reads the aligned four-word block containing `addr`; `write_en=1` writes one 32-bit word.
+- `ready` is a one-cycle response after configured latency. The memory accepts one outstanding request.
+- Reset resets protocol state, not the memory array. The array and `$readmemh` behavior are intended for simulation; this module is a behavioral main-memory model, not a synthesizable FPGA memory macro.
 
 ## Performance monitor — `rtl/performance_monitor.v` (Saumya, #5)
 
@@ -83,7 +86,7 @@ module performance_monitor (
 );
 ```
 
-Update counters only when `access_complete` is high and exactly one of hit/miss is high.
+The monitor synchronously resets all three 32-bit counters. It increments only when `access_complete` is high and exactly one of `hit_event` or `miss_event` is high. Incomplete, unclassified and simultaneous hit/miss events are ignored. The counter invariant is `total_accesses = total_hits + total_misses` between counter wraparounds.
 
 ## Cache controller — `rtl/cache_controller.v` (Krishna, #2)
 
@@ -112,7 +115,7 @@ Exposes CPU request/response, the three performance counters and controller debu
 | Memory request acceptance | Rising edge while memory is idle and registered `mem_req` is high |
 | Memory response | One-cycle `ready` pulse after configured latency |
 | CPU response | One-cycle `cpu_ready` after the full operation completes |
-| Performance accounting | Event pulses accompany CPU response; monitor samples them on the rising edge |
+| Performance accounting | Registered completion event is sampled by the monitor on the following rising edge |
 
 ## Integration invariants
 
