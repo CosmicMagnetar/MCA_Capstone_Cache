@@ -14,7 +14,10 @@ module tb_memory_init;
 
     always #5 clk = ~clk;
 
+    // Four-word fixture: keeps the test aligned with the four entries
+    // in init_memory.hex and avoids an expected sparse-file warning.
     main_memory_model #(
+        .MEM_WORDS(4),
         .MEM_INIT_FILE("memory/init_memory.hex")
     ) dut (
         .clk(clk),
