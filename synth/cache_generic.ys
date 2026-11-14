@@ -1,0 +1,6 @@
+# Technology-independent synthesis of the cache subsystem.
+# The main-memory model is behavioural, so it is kept as a black box here.
+read_verilog -sv ../rtl/address_decoder.v ../rtl/cache_storage.v ../rtl/cache_controller.v ../rtl/performance_monitor.v ../rtl/cache_top.v
+read_verilog -sv -lib ../memory/main_memory_model.v
+synth -top cache_top -flatten
+tee -o reports/generic_stat.txt stat

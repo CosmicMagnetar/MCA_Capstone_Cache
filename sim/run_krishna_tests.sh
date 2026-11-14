@@ -28,4 +28,7 @@ run_test tb_performance_monitor performance_monitor.vvp rtl/performance_monitor.
 echo "=== Full integrated cache_top and waveform verification ==="
 bash sim/run_cache_top_verification.sh
 
+echo "=== RTL trace replay ==="
+bash sim/run_trace_benchmark.sh
+
 echo "ALL PHASE I UNIT, INTEGRATION, AND WAVEFORM TESTS COMPLETED"

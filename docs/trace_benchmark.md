@@ -1,4 +1,4 @@
-# Phase I trace benchmark
+# Trace benchmark
 
 ## Purpose and method
 
@@ -8,7 +8,7 @@ This benchmark supplies repeatable word-aligned read traces to an architecture-l
 - index = block number mod 64
 - tag = floor(block number / 64)
 
-The model starts with all valid bits clear. A hit requires a valid indexed line and matching tag; a miss installs the requested tag in that line. The trace contains three deliberately distinct patterns: sequential spatial locality, repeated temporal locality, and repeated conflict between addresses 0x00000000 and 0x00000400 (same index, different tags).
+The model starts with all valid bits clear. A hit requires a valid indexed line and matching tag; a miss installs the requested tag in that line. The trace has four workloads: sequential (spatial locality), a repeated block (temporal locality), two addresses that fight over index 0 (0x00000000 and 0x00000400), and 64 seeded random reads inside a 1 KiB window from `analysis/gen_random_trace.py`.
 
 ## Run
 
@@ -26,7 +26,7 @@ The script reports the conventional estimate:
 
 `AMAT = hit time + miss rate × miss penalty`
 
-Defaults are hit time = 1 cycle and miss penalty = 5 cycles, where five cycles is the configured main-memory model response latency. This is a transparent analytical estimate, not a measured end-to-end RTL latency: controller state transitions and refill installation add cycles, and write-through transactions are excluded because these traces are read-only. The results must not be described as cycle-accurate measurements from `cache_top`.
+Defaults are hit time = 1 cycle and miss penalty = 5 cycles, where five cycles is the configured main-memory model response latency. This is a transparent analytical estimate, not a measured end-to-end RTL latency: controller state transitions and refill installation add cycles, and write-through transactions are excluded because these traces are read-only. For cycle-accurate numbers use `sim/run_trace_benchmark.sh`, which replays the same traces through `cache_top`. A read hit there takes 2 cycles and a miss takes 11.
 
 ## Scope
 

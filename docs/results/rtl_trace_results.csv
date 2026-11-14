@@ -1,0 +1,5 @@
+workload,accesses,hits,misses,hit_rate,miss_rate,total_cycles,avg_hit_cycles,avg_miss_cycles,measured_amat
+sequential,20,16,4,0.8000,0.2000,76,2.00,11.00,3.8000
+repeated,16,15,1,0.9375,0.0625,41,2.00,11.00,2.5625
+conflict,8,0,8,0.0000,1.0000,88,0.00,11.00,11.0000
+random,64,23,41,0.3594,0.6406,497,2.00,11.00,7.7656

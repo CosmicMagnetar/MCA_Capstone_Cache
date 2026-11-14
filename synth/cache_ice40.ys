@@ -1,0 +1,7 @@
+# iCE40 HX8K flow used for utilisation and timing.
+# MEM_WORDS is cut to 64 so the behavioural memory model fits as a small stand-in;
+# the cache itself is unchanged.
+read_verilog -sv ../rtl/address_decoder.v ../rtl/cache_storage.v ../rtl/cache_controller.v ../rtl/performance_monitor.v ../memory/main_memory_model.v ../rtl/cache_top.v
+chparam -set MEM_WORDS 64 cache_top
+synth_ice40 -top cache_top -json build/cache_top.json
+tee -o reports/ice40_stat.txt stat

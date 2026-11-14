@@ -1,4 +1,4 @@
-# Direct-Mapped Cache Controller — Phase I
+# Direct-Mapped Cache Controller
 
 A 32-bit, 1 KiB direct-mapped cache prototype with 64 lines, 16-byte blocks, four 32-bit words per line, write-through and write-allocate.
 
@@ -9,7 +9,8 @@ A 32-bit, 1 KiB direct-mapped cache prototype with 64 lines, 16-byte blocks, fou
 - [Krishna's implementation notes](docs/krishna_implementation.md)
 - [Aditya's implementation notes](docs/aditya_implementation.md)
 - [Saumya's memory and performance-monitor notes](docs/saumya_implementation.md)
-- [IEEE Phase I report source](report/phase1_report.tex)
+- [IEEE report](report/Cache_Controller_IEEE_Report.pdf) ([source](report/Cache_Controller_IEEE_Report.tex); figures rebuild with `python3 report/make_figures.py`)
+- [Synthesis results](synth/README.md)
 
 ## Modules and owners
 
@@ -23,15 +24,34 @@ A 32-bit, 1 KiB direct-mapped cache prototype with 64 lines, 16-byte blocks, fou
 | Integrated cache top | Krishna | `rtl/cache_top.v` |
 | Integrated system verification | Nishtha | `sim/testbenches/tb_cache_top.v` |
 
+## Results at a glance
+
+| Workload | Reads | Hit rate | Measured AMAT |
+|---|---:|---:|---:|
+| Sequential | 20 | 80.00% | 3.80 cycles |
+| Repeated block | 16 | 93.75% | 2.56 cycles |
+| Conflict thrashing | 8 | 0.00% | 11.00 cycles |
+| Random (seed 2026) | 64 | 35.94% | 7.77 cycles |
+
+Read hit 2 cycles, read miss 11. ECP5-85F: 18,851 LUTs, 10,978 FFs, 1 block RAM, **61.1 MHz** post-route.
+
 ## Trace benchmark
 
-Run the reproducible read-trace benchmark and view its methodology/results:
-
 ```sh
-python3 analysis/cache_trace_benchmark.py
+bash sim/run_trace_benchmark.sh            # replays each trace through cache_top, measures cycles
+python3 analysis/cache_trace_benchmark.py  # Python model of the same mapping
+python3 analysis/gen_random_trace.py       # rebuilds the seeded random workload
 ```
 
-See [benchmark methodology](docs/trace_benchmark.md), [benchmark results](docs/trace_benchmark_results.md), and `sim/traces/phase1_read_traces.csv`. The AMAT values are analytical estimates, not cycle-accurate RTL measurements.
+The RTL replay and the Python model agree on every hit and miss count. See [results](docs/trace_benchmark_results.md), [methodology](docs/trace_benchmark.md) and `docs/results/rtl_trace_results.csv`.
+
+## Synthesis
+
+```sh
+bash synth/run_synthesis.sh
+```
+
+Yosys for the gate counts, nextpnr-ecp5 for place-and-route timing. Details and limits are in [synth/README.md](synth/README.md).
 
 ## Simulation
 

@@ -1,0 +1,7 @@
+# Lattice ECP5 flow used for the utilisation and timing numbers in the report.
+# MEM_WORDS is cut to 64 so the behavioural memory model fits as a small stand-in;
+# the cache itself is unchanged.
+read_verilog -sv ../rtl/address_decoder.v ../rtl/cache_storage.v ../rtl/cache_controller.v ../rtl/performance_monitor.v ../memory/main_memory_model.v ../rtl/cache_top.v
+chparam -set MEM_WORDS 64 cache_top
+synth_ecp5 -top cache_top -json build/cache_top_ecp5.json
+tee -o reports/ecp5_stat.txt stat

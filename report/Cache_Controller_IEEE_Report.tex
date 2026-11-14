@@ -85,7 +85,7 @@ VI. & Performance Analysis & \pageref{sec:perf}\\
  & \hspace{1em}C. Average Access Time & \pageref{sec:amat}\\
  & \hspace{1em}D. Trace-Driven Benchmark & \pageref{sec:bench}\\
 VII. & Discussion and Limitations & \pageref{sec:disc}\\
-VIII. & Alternative Organizations and Synthesis Status & \pageref{sec:alt}\\
+VIII. & Alternative Organizations and Synthesis Results & \pageref{sec:alt}\\
 IX. & Individual Contributions & \pageref{sec:contrib}\\
 X. & Conclusion and Future Work & \pageref{sec:concl}\\
  & Appendix A: Reproducing the Results & \pageref{app:repro}\\
@@ -101,7 +101,7 @@ Fig.~\ref{fig:fsm} & Controller FSM paths & \pageref{fig:fsm}\\
 Fig.~\ref{fig:wavehit} & Waveform: cold read miss followed by a read hit & \pageref{fig:wavehit}\\
 Fig.~\ref{fig:wavewt} & Waveform: write hit, write miss and read hit & \pageref{fig:wavewt}\\
 Fig.~\ref{fig:amat} & Analytical average read latency versus hit rate & \pageref{fig:amat}\\
-Fig.~\ref{fig:bench} & Analytical AMAT for the benchmark workloads & \pageref{fig:bench}\\
+Fig.~\ref{fig:bench} & Analytical and measured AMAT for the benchmark workloads & \pageref{fig:bench}\\
 \end{tabular}
 
 \vspace{0.2cm}
@@ -150,7 +150,7 @@ Table~\ref{tab:bench} & Trace benchmark results (analytical estimates) & \pagere
 \maketitle
 
 \begin{abstract}\label{sec:abs}
-This paper presents the design and Phase~I verification of a 32-bit direct-mapped cache subsystem that reduces average memory-access latency by exploiting temporal and spatial locality. The cache holds 1~KiB as 64 lines of 16-byte blocks (four 32-bit words per line), with a 22-bit tag, 6-bit index and 4-bit offset, and uses write-through and write-allocate policies. The modular Verilog RTL comprises an address decoder, cache storage, an FSM controller, a behavioral main-memory model and a performance monitor. Verification records 374 decoder checks, unit tests for every module, and 39 integrated checks passing with no failures over a 26-access directed sequence (13 hits, 13 misses), supported by eight waveform scenarios. Waveform measurements give completion latencies of 2, 11, 9 and 18 cycles for a read hit, read miss, write hit and write miss. A trace-driven functional model of three read workloads yields hit rates of 80\% (sequential), 93.75\% (repeated block) and 0\% (conflict thrashing), corresponding to analytical average memory access times of 2.00, 1.3125 and 6.00 cycles under an assumed 1-cycle hit time and 5-cycle miss penalty; these are analytical estimates, not measured RTL latency. FPGA synthesis, resource utilization and maximum frequency remain pending, so no hardware area or timing claims are made.
+This paper presents the design and Phase~I verification of a 32-bit direct-mapped cache subsystem that reduces average memory-access latency by exploiting temporal and spatial locality. The cache holds 1~KiB as 64 lines of 16-byte blocks (four 32-bit words per line), with a 22-bit tag, 6-bit index and 4-bit offset, and uses write-through and write-allocate policies. The modular Verilog RTL comprises an address decoder, cache storage, an FSM controller, a behavioral main-memory model and a performance monitor. Verification records 374 decoder checks, unit tests for every module, and 39 integrated checks passing with no failures over a 26-access directed sequence (13 hits, 13 misses), supported by eight waveform scenarios. Waveform measurements give completion latencies of 2, 11, 9 and 18 cycles for a read hit, read miss, write hit and write miss. Four read workloads replayed through the RTL give hit rates of 80\% (sequential), 93.75\% (repeated block), 0\% (conflict thrashing) and 35.9\% (seeded random), with measured average memory access times of 3.80, 2.56, 11.00 and 7.77 cycles; a Python model of the same mapping reproduces every hit and miss count. Synthesized for a Lattice ECP5-85F, the cache uses 18{,}851 LUTs, 10{,}978 flip-flops and one block RAM and closes timing at 61.1~MHz after place-and-route.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -591,7 +591,9 @@ an average of $197/26 \approx 7.6$ cycles per access. This figure is derived fro
 
 
 \subsection{Trace-Driven Benchmark}\label{sec:bench}
-\textbf{Methodology.} To evaluate locality beyond the directed tests, a trace-driven functional model of the cache was written in Python \cite{script}. It is an architecture-level model, not an RTL simulation, and mirrors the RTL configuration of 64 lines and 16-byte blocks. For each word-aligned byte address, the block number is $\lfloor A/16\rfloor$, the index is the block number modulo 64 and the tag is $\lfloor \text{block}/64\rfloor$. Each workload starts with all valid bits clear; a hit requires a valid indexed line with a matching tag, and a miss installs the requested tag. The hit rate is hits divided by reads, and the analytical average memory access time is Eq.~\eqref{eq:amat} with the idealized assumptions $t_{\mathrm{hit}}=1$ cycle and $t_{\mathrm{penalty}}=5$ cycles (the configured main-memory response latency). The traces are read-only, so write-through behavior is not exercised. The trace dataset \cite{traces} contains the three workloads in Table~\ref{tab:traces}.
+\textbf{Methodology.} To evaluate locality beyond the directed tests, a trace-driven functional model of the cache was written in Python \cite{script}. It is an architecture-level model, not an RTL simulation, and mirrors the RTL configuration of 64 lines and 16-byte blocks. For each word-aligned byte address, the block number is $\lfloor A/16\rfloor$, the index is the block number modulo 64 and the tag is $\lfloor \text{block}/64\rfloor$. Each workload starts with all valid bits clear; a hit requires a valid indexed line with a matching tag, and a miss installs the requested tag. The hit rate is hits divided by reads, and the analytical average memory access time is Eq.~\eqref{eq:amat} with the idealized assumptions $t_{\mathrm{hit}}=1$ cycle and $t_{\mathrm{penalty}}=5$ cycles (the configured main-memory response latency). The traces are read-only, so write-through behavior is not exercised. The trace dataset \cite{traces} contains the four workloads in Table~\ref{tab:traces}; the random workload is generated by \path{analysis/gen_random_trace.py} with seed 2026.
+
+\textbf{RTL replay.} The same traces are also replayed through \texttt{cache\_top} by \path{sim/testbenches/tb_trace_replay.v}. Each workload runs from reset, every memory word is preloaded with a distinct pattern so that a wrong word or stale line shows up as a data error, and the cycles from the request edge to \texttt{cpu\_ready} are counted for every access. Hit and miss counts are read from the hardware performance counters. The measured AMAT is total cycles divided by accesses.
 
 \begin{table}[!t]
 \caption{Benchmark Workloads and Simulated Hit/Miss Counts}\label{tab:traces}
@@ -605,50 +607,73 @@ an average of $197/26 \approx 7.6$ cycles per access. This figure is derived fro
 Sequential & Words \texttt{0x00}--\texttt{0x3C} once, then \texttt{0x00}--\texttt{0x0C} again & 20 & 16 & 4\\
 Repeated block & Four words at \texttt{0x100}--\texttt{0x10C}, repeated four times & 16 & 15 & 1\\
 Conflict thrashing & \texttt{0x000} and \texttt{0x400} alternating (same index, different tags) & 8 & 0 & 8\\
+Random & 64 uniform word addresses in \texttt{0x000}--\texttt{0x3FC}, seed 2026 & 64 & 23 & 41\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Results.} The sequential trace misses once per 16-byte block (four cold misses) and then hits on the three remaining words of each block and on the re-read of the first block, illustrating spatial and temporal locality. The repeated-block trace incurs a single cold miss and 15 hits. The conflict trace maps both addresses to index~0, so each access evicts the other and every read misses; this is the pathological case for direct mapping. Table~\ref{tab:bench} gives the resulting analytical estimates and Fig.~\ref{fig:bench} compares them with a second estimate that substitutes the RTL-measured read latencies of Table~\ref{tab:lat}.
+\textbf{Results.} The sequential trace misses once per 16-byte block (four cold misses) and then hits on the three remaining words of each block and on the re-read of the first block, illustrating spatial and temporal locality. The repeated-block trace incurs a single cold miss and 15 hits. The conflict trace maps both addresses to index~0, so each access evicts the other and every read misses; this is the pathological case for direct mapping. The random trace touches a working set the size of the cache, so it starts cold and warms as lines are reused, ending at a 35.9\% hit rate. The RTL replay produced exactly the same hit and miss counts as the Python model on all four traces, and every returned word matched memory. Table~\ref{tab:bench} and Fig.~\ref{fig:bench} compare the analytical and measured AMAT.
 
 \begin{table}[!t]
-\caption{Trace Benchmark Results (Analytical Estimates)}\label{tab:bench}
+\caption{Trace Benchmark Results}\label{tab:bench}
 \centering
 \renewcommand{\arraystretch}{1.05}
 \footnotesize
 \begin{tabular}{@{}lccc@{}}
 \toprule
-\textbf{Workload} & \textbf{Hit rate} & \textbf{AMAT} & \textbf{AMAT (RTL lat.)}\\
+\textbf{Workload} & \textbf{Hit rate} & \textbf{Analytical} & \textbf{Measured (RTL)}\\
 \midrule
 Sequential & 80\% & 2.00 cycles & 3.80 cycles\\
 Repeated block & 93.75\% & 1.3125 cycles & 2.5625 cycles\\
 Conflict thrashing & 0\% & 6.00 cycles & 11.00 cycles\\
+Random & 35.94\% & 4.20 cycles & 7.77 cycles\\
 \bottomrule
 \end{tabular}\\[2pt]
-\parbox{\columnwidth}{\footnotesize AMAT: $1+5M$ (1-cycle hit, 5-cycle miss penalty). AMAT (RTL lat.): $2+9M$ using the measured latencies. Neither column is a measured RTL execution time.}
+\parbox{\columnwidth}{\footnotesize Analytical: $1+5M$ (1-cycle hit, 5-cycle miss penalty). Measured: total cycles over accesses from the RTL replay, which equals $2+9M$.}
 \end{table}
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=0.95\columnwidth]{bench.pdf}
-\caption{Analytical AMAT for the three benchmark workloads under idealized and RTL-measured latency assumptions.}\label{fig:bench}
+\caption{Analytical and RTL-measured AMAT for the four benchmark workloads.}\label{fig:bench}
 \end{figure}
 
-\textbf{Interpretation and limits.} The AMAT column uses the benchmark's idealized convention and must \emph{not} be read as cycle-accurate: it omits controller state transitions and refill-installation cycles that the waveforms show (a read hit takes 2 cycles and a read miss 11, not 1 and 6). The last column re-evaluates the same hit/miss counts with those measured latencies using Eq.~\eqref{eq:amat_read}; it is still analytical, because the traces were not replayed through \texttt{cache\_top}. The traces are small, deliberately constructed patterns that demonstrate spatial locality, temporal locality and conflict misses; they are not a real application workload. No cache-less baseline, CPI, throughput or speedup has been measured, so none is claimed. A cycle-accurate RTL trace-replay testbench is left as future work.
+\textbf{Interpretation and limits.} The analytical column uses the textbook convention and must \emph{not} be read as cycle-accurate: it omits controller state transitions and refill-installation cycles that the waveforms show (a read hit takes 2 cycles and a read miss 11, not 1 and 6). The measured column comes from replaying each trace through \texttt{cache\_top}, and it agrees with Eq.~\eqref{eq:amat_read} evaluated on the measured hit and miss latencies. The traces are small, deliberately constructed patterns that demonstrate spatial locality, temporal locality and conflict misses; they are not a real application workload. No cache-less baseline, CPI, throughput or speedup has been measured, so none is claimed.
 
 %%%%%%%%%%%%%%%%%%%% VII %%%%%%%%%%%%%%%%%%%%
 \section{Discussion and Limitations}\label{sec:disc}
 \textbf{Design decisions.} Direct mapping was chosen because it needs one tag comparison and no replacement-policy state; write-through with write-allocate removes dirty bits and eviction write-backs, so a replaced line can simply be overwritten. A single-outstanding-request protocol keeps the controller to eight states and makes every access end in exactly one hit or miss event.
 
-\textbf{Limitations.} (i)~Only aligned 32-bit word accesses are supported; byte and half-word writes would require byte enables. (ii)~Requests presented while the controller is busy are dropped, so the processor must retry. (iii)~Without a write buffer, every write stalls for the memory acknowledgement, which the latency measurements show to be the dominant cost for writes. (iv)~The memory is a behavioral simulation model; a synthesized design needs an on-chip block RAM or an external memory controller with its own timing. (v)~The 10~ns clock belongs to the testbench and is not a timing-closure result. (vi)~The directed sequence demonstrates correctness, and the trace benchmark is a read-only analytical model with small constructed traces, so neither establishes real-workload performance. (vii)~The 32-bit counters wrap after $2^{32}$ accesses.
+\textbf{Limitations.} (i)~Only aligned 32-bit word accesses are supported; byte and half-word writes would require byte enables. (ii)~Requests presented while the controller is busy are dropped, so the processor must retry. (iii)~Without a write buffer, every write stalls for the memory acknowledgement, which the latency measurements show to be the dominant cost for writes. (iv)~The memory is a behavioral simulation model; a synthesized design needs an on-chip block RAM or an external memory controller with its own timing. (v)~The 10~ns testbench clock is faster than the 61.1~MHz the design reaches after place-and-route (Section~\ref{sec:alt}). (vi)~The directed sequence demonstrates correctness, and the trace benchmark uses small constructed read-only traces, so neither establishes real-workload performance. (vii)~The 32-bit counters wrap after $2^{32}$ accesses.
 
 \textbf{Conflict misses.} The trace shows three-way contention at index~0 (addresses \texttt{0x000}, \texttt{0x400}, \texttt{0x804}) and two-way contention at indices~4 and~6. The conflict-thrashing benchmark shows the worst case: a 0\% hit rate for two alternating addresses that share an index. A two-way set-associative organization would hold such pairs simultaneously, at the cost of a second comparator and way-selection logic \cite{patterson,iitkgp}.
 
 %%%%%%%%%%%%%%%%%%%% VIII (alt) %%%%%%%%%%%%%%%%%%%%
-\section{Alternative Organizations and Synthesis Status}\label{sec:alt}
+\section{Alternative Organizations and Synthesis Results}\label{sec:alt}
 Compared with fully associative placement, direct mapping requires only one candidate line and one tag comparison, reducing lookup and replacement complexity; however, it can incur conflict misses when active blocks share an index. Set-associative caches relax this placement restriction but require multiple tag comparisons and way-selection logic \cite{patterson,iitkgp}. Phase~I selected direct mapping to keep the RTL hierarchy and FSM manageable. No quantitative hardware comparison against another implemented cache organization is available.
 
-The course requirements call for synthesis resource utilization and maximum operating frequency. A synthesis report, FPGA target part and timing constraints are not present in the repository at the time of this report. Accordingly, logic utilization, memory utilization, maximum frequency and FPGA implementation status are marked as \emph{pending} and are not estimated.
+\textbf{Synthesis.} The design was synthesized with Yosys 0.71 and placed and routed with nextpnr-ecp5 (seed 1, 100~MHz target) for a Lattice ECP5-85F in the CABGA756 package; scripts and logs are in \path{synth/}. For place-and-route the behavioral memory is shrunk to 64 words so it becomes a small stand-in; the cache is unchanged. Table~\ref{tab:synth} lists the results.
+
+\begin{table}[!t]
+\caption{ECP5-85F Synthesis and Place-and-Route Results}\label{tab:synth}
+\centering
+\renewcommand{\arraystretch}{1.05}
+\footnotesize
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Resource} & \textbf{Used} & \textbf{Available} & \textbf{\%}\\
+\midrule
+LUT4 & 18{,}851 & 83{,}640 & 22\\
+Flip-flops & 10{,}978 & 83{,}640 & 13\\
+Block RAM (DP16KD) & 1 & 208 & $<$1\\
+I/O & 201 & 365 & 55\\
+\midrule
+\multicolumn{4}{@{}l}{Post-route $f_{\max}$: \textbf{61.1~MHz} (100~MHz target not met)}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A technology-independent run with the memory as a black box gives 10{,}136 flip-flops, of which 8{,}192 hold the data array and 1{,}408 the tags. The data array reads a whole block in one cycle, so it stays in flip-flops instead of block RAM; the tag array is the only structure inferred as RAM. The critical path starts at that RAM's 5.8~ns clock-to-output and runs through the 22-bit tag compare and the controller next-state logic. Registering the hit decision or banking the data array into four $64\times32$ RAMs would shorten it. An iCE40~HX8K was also tried: the design needs 16{,}467 LUTs against 7{,}680 available, so it does not fit.
 
 %%%%%%%%%%%%%%%%%%%% VIII %%%%%%%%%%%%%%%%%%%%
 \section{Individual Contributions}\label{sec:contrib}
@@ -659,22 +684,25 @@ The following division is based on module ownership and artifacts recorded in th
 \item \textbf{Rachit Gupta:} implemented the 64-line cache storage with tags, valid bits, four-word refill, lookup and selected-word updates; added the cache-storage unit testbench.
 \item \textbf{Saumya Mishra:} implemented the behavioral memory model with configurable latency, block reads, word writes and initialization; implemented the synthesizable performance monitor and its unit tests.
 \item \textbf{Nishtha Gupta:} added the integrated cache-top testbench, edge-case verification, eight isolated VCD scenarios and the consolidated verification report.
-\item \textbf{Trace benchmark (team):} the read-trace dataset, analytical cache model, methodology and results documents were added to the repository after the module work.
+\item \textbf{Trace benchmark and synthesis:} Saumya Mishra added the read-trace dataset and the analytical model; Krishna added the random workload, the RTL trace-replay testbench and the ECP5 synthesis flow.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%% IX %%%%%%%%%%%%%%%%%%%%
 \section{Conclusion and Future Work}\label{sec:concl}
-This Phase~I project delivers a 1~KiB direct-mapped cache with four-word blocks, write-through/write-allocate policies, a behavioral main memory and performance counters. Unit tests cover the decoder, storage, controller, memory and monitor. The integrated test passed 39 checks with no failures across 26 accesses (13 hits, 13 misses), and eight isolated VCD scenarios supplement the directed tests. Waveform measurements show completion latencies of 2, 11, 9 and 18 cycles for a read hit, read miss, write hit and write miss. A trace-driven benchmark of three read workloads gave hit rates of 80\%, 93.75\% and 0\% for sequential, repeated-block and conflict-thrashing patterns, with analytical AMAT of 2.00, 1.3125 and 6.00 cycles under a 1-cycle hit and 5-cycle miss-penalty assumption. These results confirm the expected behavior: strong spatial and temporal locality benefit, and a worst case when addresses share an index.
+This Phase~I project delivers a 1~KiB direct-mapped cache with four-word blocks, write-through/write-allocate policies, a behavioral main memory and performance counters. Unit tests cover the decoder, storage, controller, memory and monitor. The integrated test passed 39 checks with no failures across 26 accesses (13 hits, 13 misses), and eight isolated VCD scenarios supplement the directed tests. Waveform measurements show completion latencies of 2, 11, 9 and 18 cycles for a read hit, read miss, write hit and write miss. Four read workloads replayed through the RTL gave hit rates of 80\%, 93.75\%, 0\% and 35.9\% for sequential, repeated-block, conflict-thrashing and random patterns, with measured AMAT of 3.80, 2.56, 11.00 and 7.77 cycles. On a Lattice ECP5-85F the cache uses 22\% of the LUTs and reaches 61.1~MHz. These results confirm the expected behavior: strong spatial and temporal locality benefit, and a worst case when addresses share an index.
 
-The main remaining hardware task is FPGA synthesis for the selected target: the team must record the tool and version, device, logic and memory utilization, timing constraints and maximum operating frequency, none of which is available yet. Further work includes an RTL trace-replay testbench for cycle-accurate AMAT, benchmarking with real application traces including writes, and a cache-less baseline to quantify CPI and speedup. Byte and unaligned accesses are outside the current prototype contract and are natural extensions, as are a set-associative variant and a write-back policy for comparison.
+Further work includes moving the data array into block RAM to raise $f_{\max}$, benchmarking with real application traces including writes, and a cache-less baseline to quantify CPI and speedup. Byte and unaligned accesses are outside the current prototype contract and are natural extensions, as are a set-associative variant and a write-back policy for comparison.
 
 \appendices
 \section{Reproducing the Results}\label{app:repro}
-The project is hosted at \url{https://github.com/Saumya-Mishra-536/MCA_Capstone_Cache}. Icarus Verilog \cite{icarus} must be installed. From the repository root:
+The project is hosted at \url{https://github.com/CosmicMagnetar/MCA_Capstone_Cache}. Icarus Verilog \cite{icarus} must be installed. From the repository root:
 \begin{itemize}
 \item \path{bash sim/run_krishna_tests.sh} compiles and runs every unit testbench, the integrated bench and all eight waveform scenarios, and ends with ``ALL PHASE I UNIT, INTEGRATION, AND WAVEFORM TESTS COMPLETED''.
 \item \path{bash sim/run_cache_top_verification.sh} runs only the integrated and waveform tests.
 \item \path{python3 analysis/cache_trace_benchmark.py} runs the trace benchmark \cite{script} on \path{sim/traces/phase1_read_traces.csv} \cite{traces}; \path{--hit-time} and \path{--miss-penalty} override the 1- and 5-cycle assumptions.
+\item \path{bash sim/run_trace_benchmark.sh} replays every workload through the RTL and writes \path{docs/results/rtl_trace_results.csv}.
+\item \path{bash synth/run_synthesis.sh} reruns synthesis and place-and-route (Yosys and nextpnr-ecp5).
+\item \path{python3 report/make_figures.py} regenerates the four figures from the VCDs and the trace results.
 \item A single scenario can be run by passing \texttt{+SCENARIO=<name>} to \texttt{vvp}, where \texttt{<name>} is one of the eight scenario names in Table~\ref{tab:scen}.
 \end{itemize}
 Source files are in \texttt{rtl/} and \texttt{memory/}, testbenches in \texttt{sim/testbenches/}, waveforms and the consolidated verification report in \texttt{sim/waveforms/}, and design notes in \texttt{docs/}.
@@ -689,8 +717,8 @@ The final regression log reports: address decoder 374 checks, 0 errors; cache st
 \bibitem{hennessy} J.~L. Hennessy and D.~A. Patterson, \emph{Computer Architecture: A Quantitative Approach}, 4th~ed. San Francisco, CA, USA: Morgan Kaufmann, 2007.
 \bibitem{verilog} \emph{IEEE Standard for Verilog Hardware Description Language}, IEEE Std 1364-2005, 2006.
 \bibitem{icarus} S.~Williams, ``Icarus Verilog.'' [Online]. Available: \url{https://steveicarus.github.io/iverilog/}. Accessed: Nov.~13, 2026.
-\bibitem{script} Team 5bit registers, ``cache\_trace\_benchmark.py: Trace-driven functional model of the 1~KiB direct-mapped cache,'' \texttt{analysis/} directory, MCA Capstone Cache repository, 2026. [Online]. Available: \url{https://github.com/Saumya-Mishra-536/MCA_Capstone_Cache}
-\bibitem{traces} Team 5bit registers, ``phase1\_read\_traces.csv: Sequential, repeated-block and conflict read traces,'' \texttt{sim/traces/} directory, MCA Capstone Cache repository, 2026. [Online]. Available: \url{https://github.com/Saumya-Mishra-536/MCA_Capstone_Cache}
+\bibitem{script} Team 5bit registers, ``cache\_trace\_benchmark.py: Trace-driven functional model of the 1~KiB direct-mapped cache,'' \texttt{analysis/} directory, MCA Capstone Cache repository, 2026. [Online]. Available: \url{https://github.com/CosmicMagnetar/MCA_Capstone_Cache}
+\bibitem{traces} Team 5bit registers, ``phase1\_read\_traces.csv: Sequential, repeated-block and conflict read traces,'' \texttt{sim/traces/} directory, MCA Capstone Cache repository, 2026. [Online]. Available: \url{https://github.com/CosmicMagnetar/MCA_Capstone_Cache}
 \end{thebibliography}
 
 \end{document}
