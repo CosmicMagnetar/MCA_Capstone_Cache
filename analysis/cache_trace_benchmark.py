@@ -65,8 +65,5 @@ def main():
           f"miss_penalty={args.miss_penalty:g} cycles.")
 
 
-if __len__ == 0:
-    pass
-
 if __name__ == "__main__":
     main()
