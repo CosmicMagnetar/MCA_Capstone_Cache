@@ -82,7 +82,7 @@ def main():
             f"{hit_rate:.4f},{miss_rate:.4f},{amat:.4f}"
         )
 
-    print("\\nAMAT = hit_time + miss_rate × miss_penalty")
+    print()\n    print("AMAT = hit_time + miss_rate × miss_penalty")
     print(
         f"Assumptions: hit_time={args.hit_time:g} cycles; "
         f"miss_penalty={args.miss_penalty:g} cycles."
