@@ -23,6 +23,16 @@ A 32-bit, 1 KiB direct-mapped cache prototype with 64 lines, 16-byte blocks, fou
 | Integrated cache top | Krishna | `rtl/cache_top.v` |
 | Integrated system verification | Nishtha | `sim/testbenches/tb_cache_top.v` |
 
+## Trace benchmark
+
+Run the reproducible read-trace benchmark and view its methodology/results:
+
+```sh
+python3 analysis/cache_trace_benchmark.py
+```
+
+See [benchmark methodology](docs/trace_benchmark.md), [benchmark results](docs/trace_benchmark_results.md), and `sim/traces/phase1_read_traces.csv`. The AMAT values are analytical estimates, not cycle-accurate RTL measurements.
+
 ## Simulation
 
 Install Icarus Verilog (`iverilog` and `vvp`) and run the full Phase I regression from the repository root:
